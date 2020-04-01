@@ -167,6 +167,7 @@ covid_us %>%
         legend.position = 'right') +
   scale_color_manual(values = c('blue', 'grey', 'grey', 'purple', 'red', 'grey', 'grey'))
 )
+
 as.character(max(covid_us$deaths))
 ?annotate
 
