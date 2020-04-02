@@ -1,6 +1,7 @@
 ### covid daily reports compiled
 library(tidyverse)
 library(lubridate)
+library(gganimate)
 
 ### daily report compilation
 
@@ -66,6 +67,10 @@ covid_all<- bind_rows(covid_char, covid_datetime, covid_state) %>%
   mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
   select(country_region, province_state, city, everything())
 glimpse(covid_all)
+
+# create US dataframe
+covid_us<- covid_all %>% 
+  filter(country_region== 'US')
 
 # checking work... "NEW YORK" is wonky... 
 covid_all %>% 
@@ -140,8 +145,7 @@ covid_all %>%
         legend.position = 'right') +
   scale_color_manual(values = c('blue', 'grey', 'grey', '#ff0000', 'purple', 'grey'))
 
-covid_us<- covid_all %>% 
-  filter(country_region== 'US')
+
 
 # deaths (US dataframe)
 plotly::ggplotly(
@@ -216,37 +220,61 @@ plotly::ggplotly(
 )
 
 
-# deaths logged
-  covid_all %>% 
-    filter(country_region== 'US' & date > '2020-03-09') %>% 
-    filter(province_state== 'California' | province_state== 'Illinois' |
-             province_state== 'New York' | province_state== 'Florida' | province_state== 'Texas' |
-             province_state== 'Pennsylvania' | province_state== 'Michigan') %>%
-    select(date, province_state, confirmed, deaths) %>% 
-    group_by(date, province_state) %>% 
-    summarise_if(is.numeric, sum) %>% 
-    mutate(ln_confirmed= log(confirmed), ln_deaths= log(deaths)) %>%
-    gather(key= metric, value= count, -date, -province_state) %>% 
-    # arrange(desc(confirmed)) %>% 
-    filter(metric== 'ln_deaths') %>% 
-    ggplot(aes(x= date, y= count, color= province_state)) + geom_line(size= 1) + 
-    annotate(geom= 'text', x=as.Date('2020-03-25'), y=5.95, label= '385', vjust= -.5) +
-    annotate(geom= 'text', x=as.Date('2020-03-26'), y= 4.1, label= '61', vjust= -1) +
-    annotate(geom= 'text', x=as.Date('2020-03-26'), y= 4.4, label= '81', vjust= 1) +
-    labs(title= 'COVID-19 Deaths- Highest Pop. States- Log Scale',
-         subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Week') +
-    theme(panel.background = element_rect(fill = 'white'), 
-          axis.text.x = element_text(angle = 90),
-          legend.position = 'right') +
-    scale_color_manual(values = c('red', 'grey', 'grey', 'orange', 'navy', 'gold', 'grey')) +
-    ylim(NA, 7)
-
-glimpse(covid_all)
-
+# deaths logged by state
 covid_all %>% 
-  select(province_state, confirmed, deaths) %>% 
-  gather(key= metric, value= count, -province_state)
+  filter(country_region== 'US' & date > '2020-03-09') %>% 
+  filter(province_state== 'California' | province_state== 'Illinois' |
+           province_state== 'New York' | province_state== 'Florida' | province_state== 'Texas' |
+           province_state== 'Pennsylvania' | province_state== 'Michigan') %>%
+  select(date, province_state, confirmed, deaths) %>% 
+  group_by(date, province_state) %>% 
+  summarise_if(is.numeric, sum) %>% 
+  mutate(ln_confirmed= log(confirmed), ln_deaths= log(deaths)) %>%
+  gather(key= metric, value= count, -date, -province_state) %>% 
+  # arrange(desc(confirmed)) %>% 
+  filter(metric== 'deaths') %>% 
+  ggplot(aes(x= date, y= count, color= province_state)) + geom_line(size= 1) + 
+  scale_color_brewer(palette = 'Paired') +
+  annotate(geom= 'text', x=as.Date('2020-03-29'), y=1550, label= '1550') +
+  annotate(geom= 'text', x=as.Date('2020-03-30'), y= 259, label= '259', vjust= -1) +
+  annotate(geom= 'text', x=as.Date('2020-03-31'), y= 150, label= '173', vjust= 1) +
+  labs(title= 'COVID-19 Deaths- Highest Pop. States- Log Scale',
+       subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Week') +
+  theme(panel.background = element_rect(fill = 'white'), 
+        axis.text.x = element_text(angle = 90),
+        legend.position = 'right', legend.title = element_blank()) +
+  # scale_color_manual(values = c('red', 'orange', 'grey', 'gold', 'navy', 'pink', 'green')) +
+  scale_y_log10() +
+  gganimate::transition_reveal(along= date)
 
+# deaths by state
+covid_us %>% 
+  filter(country_region== 'US' & date > '2020-03-09') %>% 
+  filter(province_state== 'New York' | province_state== 'Illinois' | 
+           # province_state== 'Florida' | province_state== 'Texas' |
+           province_state== 'Michigan') %>%
+  select(date, province_state, confirmed, deaths) %>% 
+  group_by(date, province_state) %>% 
+  summarise_if(is.numeric, sum) %>% 
+  mutate(ln_confirmed= log(confirmed), ln_deaths= log(deaths)) %>%
+  gather(key= metric, value= count, -date, -province_state) %>% 
+  # arrange(desc(confirmed)) %>% 
+  filter(metric== 'deaths') %>% 
+  ggplot(aes(x= date, y= count, color= province_state)) + geom_line(size= 1) + 
+  # scale_color_brewer(palette = 'Paired') +
+  annotate(geom= 'text', x=as.Date('2020-03-30'), y=1550, label= '1550') +
+  annotate(geom= 'text', x=as.Date('2020-03-30'), y= 259, label= '259', vjust= -1) +
+  annotate(geom= 'text', x=as.Date('2020-03-31'), y= 150, label= '173', vjust= 1) +
+  labs(title= 'COVID-19 Deaths- Highest Pop. States- Log Scale',
+       subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Week') +
+  theme(panel.background = element_rect(fill = 'white'), 
+        axis.text.x = element_text(angle = 90),
+        legend.position = 'right', legend.title = element_blank()) +
+  scale_color_manual(values = c('blue', 'gold', 'red')) +
+  # scale_y_log10() +
+  gganimate::transition_reveal(along= date)
+
+# cases by county
 covid_all %>% 
   filter(country_region == 'France' | country_region == 'Italy' | country_region == 'US' | 
            country_region == 'Spain' | country_region == 'United Kingdom') %>% 
@@ -260,43 +288,3 @@ covid_all %>%
         legend.position = 'none') +
   scale_fill_manual(values = c('lightgreen', 'red', 'navy', 'darkblue', 'darkred'))
 # arrange(desc(confirmed))
-
-
-
-
-
-###### experiment with long-lat
-# things
-
-geo_1<- map(.x = mid_list, .f = read_csv) %>% 
-  bind_rows() %>% 
-  janitor::clean_names(case= 'snake') %>% 
-  rename(date= last_update, city= combined_key) %>% 
-  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
-  mutate(date= as_date(date)) %>% 
-  select(province_state, country_region, city, admin2, long, lat, date, confirmed, deaths, recovered)
-
-geo_2<- map(.x = new_list, .f = read_csv) %>% 
-  bind_rows() %>% 
-  janitor::clean_names(case= 'snake') %>% 
-  rename(date= last_update, city= combined_key) %>% 
-  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
-  mutate(date= as_date(date)) %>% 
-  select(province_state, country_region, city, admin2, long, lat, date, confirmed, deaths, recovered)
-
-geo_final<- bind_rows(geo_1, geo_2) %>% 
-  mutate_if(is.numeric, ~replace(., is.na(.), 0))
-glimpse(geo_final)
-tail(geo_final)
-
-geo_us<- geo_final %>% 
-  filter(country_region== 'US' & lat != 0) %>% 
-  select(province_state, city, long, lat, date, confirmed, deaths) %>% 
-  mutate_if(is.numeric, ~replace(., is.na(.), 0))
-glimpse(geo_us)
-
-
-geo_us %>% 
-  filter(lat== 0) %>% 
-  select(province_state, date) %>% 
-  unique() 
