@@ -288,3 +288,31 @@ covid_all %>%
         legend.position = 'none') +
   scale_fill_manual(values = c('lightgreen', 'red', 'navy', 'darkblue', 'darkred'))
 # arrange(desc(confirmed))
+
+covid_all %>% 
+  filter(country_region== 'Japan')
+
+# japan
+covid_all %>% 
+  filter(country_region == 'Japan' | country_region == 'Italy' | country_region == 'US' | 
+           country_region == 'Spain' | country_region == 'United Kingdom') %>% 
+  filter(date > '2020-03-01') %>% 
+  select(country_region, date, deaths) %>% 
+  group_by(country_region, date) %>% 
+  summarise_if(is.numeric, .funs = sum) %>% 
+  # mutate(ln_deaths= log(deaths)) %>%
+  gather(key= metric, value= count, -date, -country_region) %>% 
+  filter(metric== 'deaths') %>% 
+  ggplot(aes(x= date, y= count, color= country_region)) + geom_line(size= 1) + 
+  scale_color_brewer(palette = 'Paired') +
+  # annotate(geom= 'text', x=as.Date('2020-03-29'), y=1550, label= '1550') +
+  # annotate(geom= 'text', x=as.Date('2020-03-30'), y= 259, label= '259', vjust= -1) +
+  # annotate(geom= 'text', x=as.Date('2020-03-31'), y= 150, label= '173', vjust= 1) +
+  labs(title= 'COVID-19 Deaths- Countries- Log Scale',
+       subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Week') +
+  theme(panel.background = element_rect(fill = 'white'), 
+        axis.text.x = element_text(angle = 90),
+        legend.position = 'right', legend.title = element_blank())
+  # scale_color_manual(values = c('red', 'orange', 'grey', 'gold', 'navy', 'pink', 'green')) +
+
+
