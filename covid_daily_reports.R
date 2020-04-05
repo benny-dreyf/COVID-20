@@ -11,13 +11,6 @@ map_list<- map(.x= ' ', paste0,
                '/Users/BenDreyfuss/drepo/COVID-20/csse_covid_19_data/csse_covid_19_daily_reports/', file_list, 
                collapse = "")  %>% 
   str_split(pattern = ' ')
-
-# covid_all<- tibble()
-# for (i in seq_along(map_list[[1]])){
-#   tmp<- read_csv(map_list[[1]][i]) 
-#   covid_all<- bind_rows(tmp, covid_all)
-# }
-# covid_all
 map_list
 
 # break data into two lists due to date formatting for files '2020-02-01' and prior
@@ -72,36 +65,6 @@ glimpse(covid_all)
 covid_us<- covid_all %>% 
   filter(country_region== 'US')
 
-# checking work... "NEW YORK" is wonky... 
-covid_all %>% 
-  filter(country_region== 'US') %>% 
-  select(province_state, confirmed, recovered, deaths) %>% 
-  group_by(province_state) %>% 
-  summarise_if(is.numeric, sum) %>% 
-  arrange(desc(confirmed))
-
-unique(covid_all$date)
-
-covid_all %>% 
-  filter(province_state== 'New York' & date== '2020-03-24') %>% 
-  select(province_state, confirmed, recovered, deaths) %>% 
-  group_by(province_state) %>% 
-  summarise_if(is.numeric, sum) %>% 
-  arrange(desc(confirmed))
-
-# looks linear, not a ton of data for NY
-covid_all %>% 
-  filter(date > '2020-03-04') %>% 
-  filter(str_detect(province_state, pattern = 'New York') | str_detect(province_state, pattern = 'NY') ) %>% 
-  select(date, confirmed, deaths) %>% 
-  group_by(date) %>% 
-  summarise_if(is.numeric, sum) %>% 
-  mutate(confirm_ln= log(confirmed)) %>% 
-  gather(key= metric, value= count, -date) %>% 
-  filter(metric== 'confirm_ln') %>% 
-  ggplot(aes(x= date, y= count, color= metric)) + geom_line() + geom_smooth(method = 'lm' ,formula= y~x)
-
-
 # col chart showing total volume of confirmed by top 10 populous states
 covid_all %>% 
   filter(country_region== 'US') %>% 
@@ -111,7 +74,7 @@ covid_all %>%
            province_state== 'North Carolina' | province_state== 'Michigan') %>%
   select(date, province_state, confirmed, deaths) %>% 
   group_by(province_state) %>% 
-  summarise_if(is.numeric, sum) %>% 
+  summarise_if(is.numeric, max) %>% 
   # arrange(desc(confirmed)) %>% 
   mutate(province_state= fct_reorder(.f= province_state, .x= confirmed, .desc= TRUE)) %>% 
   ggplot(aes(x= province_state, y= confirmed, fill= 'red')) + geom_col() +
@@ -123,7 +86,7 @@ covid_all %>%
         axis.ticks.y = element_blank(),
         legend.position = 'none')
 
-# top six most populous states over time
+# confirmed cases top six most populous states over time
 covid_all %>% 
   filter(country_region== 'US' & date > '2020-03-09') %>% 
   filter(province_state== 'California' | province_state== 'Illinois' |
@@ -144,8 +107,6 @@ covid_all %>%
         axis.text.x = element_text(angle = 90),
         legend.position = 'right') +
   scale_color_manual(values = c('blue', 'grey', 'grey', '#ff0000', 'purple', 'grey'))
-
-
 
 # deaths (US dataframe)
 plotly::ggplotly(
@@ -172,9 +133,6 @@ covid_us %>%
   scale_color_manual(values = c('blue', 'grey', 'grey', 'purple', 'red', 'grey', 'grey'))
 )
 
-as.character(max(covid_us$deaths))
-?annotate
-
 
 ### EDA / QA
 covid_us %>% 
@@ -184,40 +142,6 @@ covid_us %>%
   summarise_if(is.numeric, .funs= sum) %>% 
   select(deaths) %>% 
   max()
-
-max(covid_us %>% 
-  filter(date== '2020-03-27') %>% 
-  select(deaths))
-
-# deaths log_scale
-plotly::ggplotly(
-  covid_all %>% 
-    filter(country_region== 'US' & date > '2020-03-15') %>% 
-    filter(province_state== 'California' | province_state== 'Illinois' |
-             province_state== 'New York' | province_state== 'Florida' | province_state== 'Texas' |
-             province_state== 'Pennsylvania' | province_state== 'Michigan') %>%
-    select(date, province_state, confirmed, deaths) %>% 
-    group_by(date, province_state) %>% 
-    summarise_if(is.numeric, sum) %>% 
-    mutate(ln_confirmed= log(confirmed), ln_deaths= log(deaths)) %>%
-    gather(key= metric, value= count, -date, -province_state) %>% 
-    # arrange(desc(confirmed)) %>% 
-    filter(metric== 'deaths') %>% 
-    ggplot(aes(x= date, y= count, color= province_state)) + geom_line() + 
-    annotate(geom= 'text', x=max(as.Date(covid_all$date)), y=385, 
-             # annotate("text", x=floor_date(max(sa_dat1$variable), "month") - months(12)
-             # label = paste0("April 2017\n", paste("$",round(max(sa_dat1$value)
-             label= '385', hjust= -.5) +
-    annotate(geom= 'text', x=as.Date('2020-03-26'), y=61, label= '61', vjust= -1) +
-    annotate(geom= 'text', x=as.Date('2020-03-26'), y=81, label= '81', vjust= -1) +
-    labs(title= 'COVID-19 Deaths- Highest Pop. States', 
-         subtitle= 'March 2020-Current', y= 'COVID-19 Deaths', x= 'Week') +
-    theme(panel.background = element_rect(fill = 'white'), 
-          axis.text.x = element_text(angle = 90),
-          legend.position = 'right') +
-    scale_color_manual(values = c('blue', 'grey', 'grey', 'purple', 'red', 'grey', 'grey')) +
-    scale_y_log10()
-)
 
 
 # deaths logged by state
@@ -244,75 +168,60 @@ covid_all %>%
         axis.text.x = element_text(angle = 90),
         legend.position = 'right', legend.title = element_blank()) +
   # scale_color_manual(values = c('red', 'orange', 'grey', 'gold', 'navy', 'pink', 'green')) +
-  scale_y_log10() +
-  gganimate::transition_reveal(along= date)
+  scale_y_log10()
 
-# deaths by state
+# time aligning states (fix annotation!)
 covid_us %>% 
-  filter(country_region== 'US' & date > '2020-03-09') %>% 
-  filter(province_state== 'New York' | province_state== 'Illinois' | 
-           # province_state== 'Florida' | province_state== 'Texas' |
-           province_state== 'Michigan') %>%
-  select(date, province_state, confirmed, deaths) %>% 
-  group_by(date, province_state) %>% 
-  summarise_if(is.numeric, sum) %>% 
-  mutate(ln_confirmed= log(confirmed), ln_deaths= log(deaths)) %>%
-  gather(key= metric, value= count, -date, -province_state) %>% 
-  # arrange(desc(confirmed)) %>% 
-  filter(metric== 'deaths') %>% 
-  ggplot(aes(x= date, y= count, color= province_state)) + geom_line(size= 1) + 
-  # scale_color_brewer(palette = 'Paired') +
-  annotate(geom= 'text', x=as.Date('2020-03-30'), y=1550, label= '1550') +
-  annotate(geom= 'text', x=as.Date('2020-03-30'), y= 259, label= '259', vjust= -1) +
-  annotate(geom= 'text', x=as.Date('2020-03-31'), y= 150, label= '173', vjust= 1) +
-  labs(title= 'COVID-19 Deaths- Highest Pop. States- Log Scale',
-       subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Week') +
+  filter(country_region== "US") %>% 
+  select(date, province_state, deaths) %>% 
+  filter(deaths> 10 & province_state== 'New York' |
+           deaths> 10 & province_state == 'California' |
+           deaths> 10 & province_state == 'Texas'|
+           deaths> 10 & province_state == 'Michigan'|
+           deaths> 10 & province_state == 'Pennsylvania'|
+           deaths> 10 & province_state == 'Florida' |
+           deaths> 10 & province_state == 'Illinois' 
+  ) %>%
+  group_by(province_state, date) %>% 
+  summarise_at(.vars= vars(deaths), max) %>% 
+  # ungroup() %>% 
+  arrange(province_state, date) %>% 
+  mutate(day = row_number()) %>%
+  group_by(date, day, province_state) %>% 
+  summarise_at(.vars= vars(deaths), max) %>% 
+  ggplot(aes(x= day, y= deaths, color= province_state)) + geom_line(size= 1) +
+  # annotate(geom= 'text', x= max(covid_us$day), y=max(covid_us$deaths), label= 'max') +
+  labs(title= 'COVID-19 Deaths by State- Log Scale',
+       subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Days Since 10th Death') +
   theme(panel.background = element_rect(fill = 'white'), 
         axis.text.x = element_text(angle = 90),
         legend.position = 'right', legend.title = element_blank()) +
-  scale_color_manual(values = c('blue', 'gold', 'red')) +
-  # scale_y_log10() +
-  gganimate::transition_reveal(along= date)
+  scale_y_log10()
 
-# cases by county
-covid_all %>% 
-  filter(country_region == 'France' | country_region == 'Italy' | country_region == 'US' | 
-           country_region == 'Spain' | country_region == 'United Kingdom') %>% 
-  select(country_region, confirmed) %>% 
-  group_by(country_region) %>% 
-  summarise_if(is.numeric, .funs = sum) %>% 
-  mutate(country_region= fct_reorder(country_region, confirmed, .desc= TRUE)) %>% 
-  ggplot(aes(x= country_region, y= confirmed, fill= country_region)) + geom_col() + geom_text(aes(label=confirmed), vjust= -1) +
-  theme(panel.background = element_rect(fill = 'white'), 
-        axis.text.x = element_text(angle = 90),
-        legend.position = 'none') +
-  scale_fill_manual(values = c('lightgreen', 'red', 'navy', 'darkblue', 'darkred'))
-# arrange(desc(confirmed))
+# time aligning all countries to a single first day
 
 covid_all %>% 
-  filter(country_region== 'Japan')
-
-# japan
-covid_all %>% 
-  filter(country_region == 'Japan' | country_region == 'Italy' | country_region == 'US' | 
-           country_region == 'Spain' | country_region == 'United Kingdom') %>% 
-  filter(date > '2020-03-01') %>% 
-  select(country_region, date, deaths) %>% 
+  select(date, country_region, deaths) %>% 
+  filter(deaths> 10 & country_region== 'France' |
+           deaths> 10 & country_region == 'US' |
+           deaths> 10 & country_region == 'Italy'|
+           deaths> 10 & country_region == 'Japan'|
+           deaths> 10 & country_region == 'South Korea'|
+           deaths> 10 & country_region == 'Spain' |
+           deaths> 10 & country_region == 'Germany' 
+  ) %>%
   group_by(country_region, date) %>% 
-  summarise_if(is.numeric, .funs = sum) %>% 
-  # mutate(ln_deaths= log(deaths)) %>%
-  gather(key= metric, value= count, -date, -country_region) %>% 
-  filter(metric== 'deaths') %>% 
-  ggplot(aes(x= date, y= count, color= country_region)) + geom_line(size= 1) + 
-  scale_color_brewer(palette = 'Paired') +
-  # annotate(geom= 'text', x=as.Date('2020-03-29'), y=1550, label= '1550') +
-  # annotate(geom= 'text', x=as.Date('2020-03-30'), y= 259, label= '259', vjust= -1) +
-  # annotate(geom= 'text', x=as.Date('2020-03-31'), y= 150, label= '173', vjust= 1) +
-  labs(title= 'COVID-19 Deaths- Countries- Log Scale',
-       subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Week') +
+  summarise_at(.vars= vars(deaths), max) %>% 
+  # ungroup() %>% 
+  arrange(country_region, date) %>% 
+  mutate(day = row_number()) %>%
+  group_by(date, day, country_region) %>% 
+  summarise_at(.vars= vars(deaths), max) %>% 
+  ggplot(aes(x= day, y= deaths, color= country_region)) + geom_line(size= 1) +
+  labs(title= 'COVID-19 Deaths by Country- Log Scale',
+       subtitle= 'March 2020-Current', y= 'COVID-19 Deaths (log scale)', x= 'Day Number') +
   theme(panel.background = element_rect(fill = 'white'), 
         axis.text.x = element_text(angle = 90),
-        legend.position = 'right', legend.title = element_blank())
-  # scale_color_manual(values = c('red', 'orange', 'grey', 'gold', 'navy', 'pink', 'green')) +
-
+        legend.position = 'right', legend.title = element_blank()) +
+  scale_y_log10() 
 
