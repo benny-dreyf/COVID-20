@@ -5,10 +5,22 @@ library(gganimate)
 
 ### daily report compilation
 
-file_list<- list.files('/Users/BenDreyfuss/drepo/COVID-20/csse_covid_19_data/csse_covid_19_daily_reports/', pattern = '*.csv')
+
+# mapping on personal comp
+# file_list<- list.files('/Users/BenDreyfuss/drepo/COVID-20/csse_covid_19_data/csse_covid_19_daily_reports/', pattern = '*.csv')
+# file_list
+# map_list<- map(.x= ' ', paste0, 
+#                '/Users/BenDreyfuss/drepo/COVID-20/csse_covid_19_data/csse_covid_19_daily_reports/', file_list, 
+#                collapse = "")  %>% 
+#   str_split(pattern = ' ')
+# map_list
+
+
+# mapping on work comp
+file_list<- list.files('/Users/ben.dreyfuss/Desktop/repos/COVID-20/csse_covid_19_data/csse_covid_19_daily_reports/', pattern = '*.csv')
 file_list
 map_list<- map(.x= ' ', paste0, 
-               '/Users/BenDreyfuss/drepo/COVID-20/csse_covid_19_data/csse_covid_19_daily_reports/', file_list, 
+               '/Users/ben.dreyfuss/Desktop/repos/COVID-20/csse_covid_19_data/csse_covid_19_daily_reports/', file_list, 
                collapse = "")  %>% 
   str_split(pattern = ' ')
 map_list
